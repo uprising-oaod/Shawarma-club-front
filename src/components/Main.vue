@@ -8,6 +8,10 @@
             {{ item.order }}
           </li>
         </ul>
+
+        <el-button class="button" type="info" @click="closeDay"
+          >Закрыть день</el-button
+        >
       </el-col>
       <el-col :span="8" :offset="2">
         <h2>Новый заказ</h2>
@@ -60,13 +64,15 @@
         <el-button class="button" type="primary" @click="submit"
           >Заказ</el-button
         >
-        <el-button class="button" type="danger" @click="deleteOrder">Удалить заказ</el-button>
+        <el-button class="button" type="danger" @click="deleteOrder"
+          >Удалить заказ</el-button
+        >
         <!-- <el-checkbox v-model="mini" label="Mini" size="medium"></el-checkbox> -->
       </el-col>
     </el-row>
     <el-row>
       <el-image
-        style="width: 900px; height: 600px; margin: 0 auto;"
+        style="width: 900px; height: 600px; margin: 0 auto"
         :src="require(`@/assets/menu.jpg`)"
         :fit="fill"
       ></el-image>
@@ -76,6 +82,8 @@
 
 <script>
 import EventService from "@/services/EventService.js";
+import { mapActions } from "vuex";
+import { mapState } from 'vuex'
 
 export default {
   data() {
@@ -217,10 +225,20 @@ export default {
         order.order += `  + ${this.pref}`;
       }
 
+      this.logIn(order.pass);
       this.submitOrder(order);
     },
     deleteOrder() {
-      console.log("Not implemented yet")
+      EventService.deleteOrder(this.name, this.pass).then((response) => {
+        console.log(response);
+        this.fetchOrders();
+      });
+    },
+    closeDay() {
+      EventService.closeDay(this.name, this.pass).then((response) => {
+        console.log(response);
+        this.fetchOrders();
+      });
     },
     submitOrder(order) {
       EventService.submitOrder(order)
@@ -236,21 +254,50 @@ export default {
           return false;
         });
     },
+    findDuplicates(array, acc = []) {
+      if (array.length == 0 || array == null) {
+        console.log(acc);
+        return acc;
+      } else {
+        let car = array[0];
+        array = array.slice(1);
+        let i = 1;
+
+        array.forEach((item) => {
+          if (item == car) {
+            i++;
+          }
+        });
+        array = array.filter((item) => item != car);
+        acc.push((car += ` X${i}`));
+        this.findDuplicates(array, acc);
+      }
+    },
     fetchOrders() {
       EventService.getOrders()
         .then((response) => {
           if (response.data) {
             this.orders = response.data;
+
+            const stacked = this.findDuplicates(
+              this.orders.map((item) => item.order.split("- ")[1])
+            );
+            console.log(stacked);
           }
         })
         .catch((error) => {
-          console.log("There was an error: " + error.response);
+          console.log("There was an error: " + error);
         });
     },
+    ...mapActions("user", ["logIn"]),
   },
   created() {
     this.fetchOrders();
+    if (this.token) {
+      this.pass = this.token
+    }
   },
+  computed: mapState("user", ["token"])
 };
 </script>
 
@@ -260,7 +307,7 @@ h2 {
 }
 .order-list {
   width: 100%;
-  height: 500px;
+  height: 270px;
 }
 .order-value {
   margin-bottom: 10px;
@@ -286,5 +333,6 @@ h2 {
 .button {
   width: 140px;
   margin-right: 10px;
+  margin-bottom: 25px;
 }
 </style>

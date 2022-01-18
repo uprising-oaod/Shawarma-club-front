@@ -15,5 +15,11 @@ export default {
   },
   submitOrder(order) {
     return apiClient.post('/api/orders', order)
-  }
+  },
+  deleteOrder(user, pass) {
+    return apiClient.delete(`/api/orders?user=${user}&pass=${pass}`)
+  },
+  closeDay(user, pass) {
+    return apiClient.post(`/api/day?user=${user}&pass=${pass}`)
+  }  
 }
